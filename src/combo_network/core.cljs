@@ -33,53 +33,24 @@
     (set! (.-height canvas) (.-innerHeight js/window))
     (.getContext canvas "2d")))
 
+(defn drawing-board [])
 
-(defn drawing-board []
+;; (defn draw
+;;   [ctx {:keys [x y old-x old-y color]}]
+;;   (do
+;;     (set! (.-strokeStyle ctx) color)
+;;     (set! (.-lineWidth ctx) line-width)
+;;     (.beginPath ctx)
+;;     (.moveTo ctx old-x old-y)
+;;     (.lineTo ctx x y)
+;;     (.stroke ctx)))
+
+(defn app []
   [:div {:id "content"}
    [:canvas {:id "canvas"}]])
 
-
-(defn draw
-  [ctx {:keys [x y old-x old-y color]}]
-  (do
-    (set! (.-strokeStyle ctx) color)
-    (set! (.-lineWidth ctx) line-width)
-    (.beginPath ctx)
-    (.moveTo ctx old-x old-y)
-    (.lineTo ctx x y)
-    (.stroke ctx)))
-
-(defn render
-  []
-  (.requestAnimationFrame js/window render)
-  (let [{:keys [width height particles mouse]} @app-state]
-    (.clearRect context 0 0 width height)
-    (dotimes [n max-particles]
-      (let [particle (nth particles n)
-            x (:x mouse)
-            y (:y mouse)
-            p particle]
-        (draw context p)
-        (swap! app-state assoc-in [:particles n] p)))))
-
-
-(defn animate []
-  (js/setInterval (render) (/ 1000 60)))
-
-(def attach-renderer
-  (with-meta drawing-board
-    {:component-did-mount animate}))
-
-(defn app []
-  [drawing-board]
-  [attach-renderer])
-
-(reagent/render-component [app]
-                          (. js/document (getElementById "app")))
-;; (defn ^:export run []
-;;   (reagent/render-component [app]
-;;                             (.-body js/document)))
-
+(reagent/render [app]
+                (js/document.getElementById "app"))
 
 
 (defn on-js-reload []
