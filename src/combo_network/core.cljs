@@ -20,11 +20,18 @@
 (def damping 0.999)
 (def max-particles 250)
 (def line-width 2)
+(def window-dimensions (reagent/atom nil))
+
 
 ;; funcs
 
 (def pi Math/PI)
 (def two-pi (* 2 pi))
+
+;; event handling
+
+(defn on-window-resize [ evt ]
+  (reset! window-dimensions [(.-innerWidth js/window) (.-innerHeight js/window)]))
 
 ;; do stuff
 
@@ -61,22 +68,45 @@
 
 (defn ui-control
   [state]
-  [:button {:on-click #(reset! state empty-state)} "restart"])
+  [:div {:class "Control__ui"}
+  [:button {:on-click #(reset! state empty-state)} "restart"]])
 
 (defn d3-canvas
   [state]
-  [:canvas])
+  (let [dom-node (reagent/atom nil)]
+    (reagent/create-class
+     {
+      ;; :component-did-update
+      ;; (fn [ this ]
+      ;;   (draw-canvas-contents (.-firstChild @dom-node)))
+
+      :component-did-mount
+      (fn [ this ]
+        (reset! dom-node (reagent/dom-node this)))
+
+      :reagent-render
+      (fn [ ]
+        @window-dimensions ;; Trigger re-render on window resizes
+        [:div.with-canvas
+         ;; reagent-render is called before the compoment mounts, so
+         ;; protect against the null dom-node that occurs on the first
+         ;; render
+         [:canvas (if-let [ node @dom-node ]
+                    {:width (.-clientWidth node)
+                     :height (.-clientHeight node)})]])})))
 
 (defn graph-component
   [state]
   [d3-canvas state])
 
 (defn control-component [state]
-  [graph-component state]
-  [ui-control state])
+  [:div
+   [graph-component state]
+   [ui-control state]])
 
 (reagent/render [control-component state]
                 (js/document.getElementById "app"))
+(.addEventListener js/window "resize" on-window-resize)
 
 (defn on-js-reload [])
   ;; optionally touch your app-state to force rerendering depending on
