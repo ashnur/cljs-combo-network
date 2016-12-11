@@ -13,7 +13,8 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(defonce app-state (atom {:nodes [] :edges []}))
+(defonce empty-state (atom {:nodes [] :edges []}))
+(defonce state empty-state)
 (def display (.getElementById js/document "display"))
 ;; (def context (.getContext display "2d"))
 (def damping 0.999)
@@ -45,25 +46,37 @@
 ;;     (.lineTo ctx x y)
 ;;     (.stroke ctx)))
 
-(defn control-component 
-  [x y z]
-  (let [some "what"]
-    (reagent/create-class
-      {:component-did-mount
-        #(println "component did mount")
-       :component-will-mount
-        #(println "component will mount")
-       :display-name "my-component"
-       :reagent-render 
-       (fn [x y z ] [:div (str x " " y)])})))
+;; (defn control-component 
+;;   [x y z]
+;;   (let [canvas null]
+;;     (reagent/create-class
+;;       {:component-did-mount
+;;        #(swap! canvas (js/document.getElementBy))
+;;        :component-will-mount
+;;        #(println "component did mount")
+;;        :display-name "control-component"
+;;        :should-component--update (fn [nP, nS] (false))
+;;        :reagent-render 
+;;        (fn [x y z ] [:div (str x " " y)])})))
 
+(defn ui-control
+  [state]
+  [:button {:on-click #(reset! state empty-state)} "restart"])
 
-(defn app []
-  [my-component 1 2 3])
+(defn d3-canvas
+  [state]
+  [:canvas])
 
-(reagent/render [app]
+(defn graph-component
+  [state]
+  [d3-canvas state])
+
+(defn control-component [state]
+  [graph-component state]
+  [ui-control state])
+
+(reagent/render [control-component state]
                 (js/document.getElementById "app"))
-
 
 (defn on-js-reload [])
   ;; optionally touch your app-state to force rerendering depending on
