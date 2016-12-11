@@ -45,16 +45,28 @@
 ;;     (.lineTo ctx x y)
 ;;     (.stroke ctx)))
 
+(defn control-component 
+  [x y z]
+  (let [some "what"]
+    (reagent/create-class
+      {:component-did-mount
+        #(println "component did mount")
+       :component-will-mount
+        #(println "component will mount")
+       :display-name "my-component"
+       :reagent-render 
+       (fn [x y z ] [:div (str x " " y)])})))
+
+
 (defn app []
-  [:div {:id "content"}
-   [:canvas {:id "canvas"}]])
+  [my-component 1 2 3])
 
 (reagent/render [app]
                 (js/document.getElementById "app"))
 
 
-(defn on-js-reload []
+(defn on-js-reload [])
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
+
