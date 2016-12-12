@@ -15,7 +15,10 @@
                  [cljsjs/d3 "4.3.0-2"]]
 
   :plugins [[lein-figwheel "0.5.8"]
-            [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]]
+            [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]
+            [lein-npm "0.6.2"]]
+
+  :npm {:dependencies [[jsnetworkx "0.3.4"]]}
 
   :source-paths ["src"]
 

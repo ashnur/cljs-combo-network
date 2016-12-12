@@ -7,9 +7,11 @@
                                    dispatch
                                    dispatch-sync
                                    subscribe]]
-            [cljsjs.d3]))
+            [cljsjs.d3]
+            ))
 
 (enable-console-print!)
+(println (js/require "jsnetworkx"))
 
 ;; define your app data so that it doesn't get over-written on reload
 
@@ -21,6 +23,7 @@
 (def max-particles 250)
 (def line-width 2)
 (def window-dimensions (reagent/atom nil))
+
 
 
 ;; funcs
