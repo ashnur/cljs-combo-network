@@ -12,7 +12,8 @@
                   :exclusions [org.clojure/tools.reader]]
                  [reagent "0.6.0"]
                  [re-frame "0.8.0"]
-                 [cljsjs/d3 "4.3.0-2"]]
+                 [cljsjs/d3 "4.3.0-2"]
+                 [cljsjs/jsnetworkx "0.3.4-0"]]
 
   :plugins [[lein-figwheel "0.5.8"]
             [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]

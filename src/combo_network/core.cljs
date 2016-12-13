@@ -8,10 +8,10 @@
                                    dispatch-sync
                                    subscribe]]
             [cljsjs.d3]
+            [cljsjs.jsnetworkx]
             ))
 
 (enable-console-print!)
-(println (js/require "jsnetworkx"))
 
 ;; define your app data so that it doesn't get over-written on reload
 
