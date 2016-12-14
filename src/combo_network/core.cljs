@@ -8,10 +8,9 @@
                                    dispatch-sync
                                    subscribe]]
             [cljsjs.d3]
-            [cljsjs.jsnetworkx]
+            [combo-network.graph :as graph]
             ))
 
-(enable-console-print!)
 
 ;; define your app data so that it doesn't get over-written on reload
 
@@ -23,8 +22,6 @@
 (def max-particles 250)
 (def line-width 2)
 (def window-dimensions (reagent/atom nil))
-
-
 
 ;; funcs
 
@@ -63,7 +60,6 @@
 ;;       {:component-did-mount
 ;;        #(swap! canvas (js/document.getElementBy))
 ;;        :component-will-mount
-;;        #(println "component did mount")
 ;;        :display-name "control-component"
 ;;        :should-component--update (fn [nP, nS] (false))
 ;;        :reagent-render 
