@@ -1,4 +1,7 @@
-(ns combo-network.graph)
+(ns combo-network.graph
+  (:require [cljs.pprint :refer [pprint]]))
+
+(enable-console-print!)
 
 ;; A model for social networks
 ;; Riitta Toivonen!, Jukka-Pekka Onnela, Jari Sarama¨ki,
@@ -15,11 +18,23 @@
 ;; initial-contacts (select-random seed-nodes)
 ;; secondary-contact (select)
 
+(defn in? 
+  "true if coll contains elm"
+  [coll elm]  
+  (some #(= elm %) coll))
+
 (defn primary-contact
   [graph new-node]
   (let [edges (:edges graph)
         nodes (:nodes graph)
-        contacts (filter #(< (js/Math.random) initial-contact-ratio) nodes)]
+        contacts (concat (filter #(< (js/Math.random) initial-contact-ratio) nodes))
+        contact-edges (distinct (filter
+                                 (fn [edge]
+                                   (or (in? contacts (first edge))
+                                       (in? contacts (nth edge 1))))
+                                 edges))
+        contact-neighbours (concat (map #() edges))]
+    (js/console.log contacts contact-edges )
     (map #(vector % new-node) contacts)))
 
 (defn grow-step [graph]
@@ -27,6 +42,7 @@
         new-node (+ (apply max nodes) 1)
         edges (:edges graph)
         new-edges (primary-contact graph new-node)]
+    (js/console.log new-edges)
     {:nodes (conj nodes new-node)
      :edges (concat edges new-edges)}))
 
@@ -47,4 +63,4 @@
     (grow-graph-to-size {:nodes seed-nodes :edges '()} final-size))) 
 
 
-(js/console.log (graph 1 3)) ;; {:nodes (4 3 2 1 0) , :edges []}
+(pprint (graph 1 5)) ;; {:nodes (4 3 2 1 0) , :edges []}

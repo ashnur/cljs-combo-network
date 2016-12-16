@@ -13,6 +13,7 @@
                  [reagent "0.6.0"]
                  [re-frame "0.8.0"]
                  [cljsjs/d3 "4.3.0-2"]
+                 
                  ]
 
   :plugins [[lein-figwheel "0.5.8"]
