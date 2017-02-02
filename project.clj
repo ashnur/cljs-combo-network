@@ -13,7 +13,7 @@
                  [reagent "0.6.0"]
                  [re-frame "0.8.0"]
                  [cljsjs/d3 "4.3.0-2"]
-                 
+                 [com.andrewmcveigh/cljs-time "0.4.0"]
                  ]
 
   :plugins [[lein-figwheel "0.5.8"]
@@ -35,7 +35,6 @@
                 ;; into your build
                 :figwheel {:on-jsload "combo-network.core/on-js-reload"}
                            ;; :websocket-host "192.168.1.3"}
-                           
                            ;; :open-urls will pop open your application
                            ;; in the default browser once Figwheel has
                            ;; started and complied your application.
@@ -94,7 +93,6 @@
 
              ;; to configure a different figwheel logfile path
              ;; :server-logfile "tmp/logs/figwheel-logfile.log"
-             
 
 
   ;; setting up nREPL for Figwheel and ClojureScript dev
