@@ -15,16 +15,17 @@
 
 
 (def delay-after-start 2000)
-(def G (ggen/erdos-renyi 10 0.2))
+(def G (ggen/erdos-renyi 100 0.2))
 
-(defonce empty-state (atom {:nodes [] :edges []}))
+(defonce empty-state (atom G))
 (defonce state empty-state)
 (def display (.getElementById js/document "display"))
 ;; (def context (.getContext display "2d"))
 ;; (def damping 0.999)
 ;; (def max-particles 250)
 (def line-width 2)
-(def ctx (reagent/atom nil))
+(def ctx nil)
+(def message-alpha 0.22)
 (def window-dimensions (reagent/atom nil))
 
 
@@ -35,25 +36,45 @@
   (let [canvas (js/document.querySelector "canvas")]
     (set! (.-width canvas) (.-innerWidth js/window))
     (set! (.-height canvas) (.-innerHeight js/window))
-    (.log js/console canvas)
-    (.log js/console (.getContext canvas "2d"))
     (.getContext canvas "2d")))
 
 (defn drawing-board [])
 
 (defn context-update [ ]
-  (reset! ctx (context)))
+  (set! ctx (context)))
 
 (defn on-window-resize []
   (reset! window-dimensions {:width (.-innerWidth js/window) :height (.-innerHeight js/window)}))
 
+(defn draw-node
+  [d]
+  ;; (.log js/console d)
+  (.moveTo ctx (+ d.x 2.5) d.y)
+  (.arc ctx d.x d.y 2.5 0 2 * (.-PI js/Math)))
+
+(def drawn-edges [])
+(defn draw-old-message [msg]
+  (let [source (:source msg)
+        target (:target msg)]
+    (.log js/console source target msg)))
+
 (defn ticked
   []
-  ; (.log js/console @ctx)
-  (if @ctx
-    (
-     (.clearRect ctx (:width window-dimensions) (:height window-dimensions))
-     (.strokeStyle ctx "#123456"))))
+  (.clearRect ctx 0 0 (:width window-dimensions) (:height window-dimensions))
+
+  (aset ctx "globalAlpha" message-alpha)
+  (.beginPath ctx)
+  (doseq [msg drawn-edges] (draw-old-message msg))
+
+  
+
+  (aset ctx "strokeStyle" "#123456")
+  (.beginPath ctx)
+  (doseq [node (:nodes G)] (draw-node node))
+  (aset ctx "globalAlpha" 0.3)
+  (aset ctx "fillStyle" (.interpolateViridis js/d3 0.3))
+  (.fill ctx)
+  )
 
 (def simulation
   (.. js/d3 forceSimulation
@@ -63,7 +84,6 @@
       (force "collide" (.forceCollide js/d3 5))
       (force "charge" (.. js/d3 forceManyBody (distanceMin 20) (strength -1)))
       ))
-(.. simulation (nodes (:nodes G)) (on "tick" ticked))
 
 (defn ui-control
   [state]
@@ -82,9 +102,11 @@
       :component-did-mount
       (fn [ this ]
         ;; (js/setTimeout update-vis delay-after-start)
-        (.log js/console (reagent/dom-node this))
-        (context-update )
-        (reset! dom-node (reagent/dom-node this)))
+        ;; (.log js/console (reagent/dom-node this))
+        (context-update)
+        (.. simulation (nodes (:nodes G)) (on "tick" ticked))
+        (reset! dom-node (reagent/dom-node this)
+        ))
 
       :reagent-render
       (fn [ ]

@@ -35,9 +35,12 @@
     (when (every? seq seqs)
       (lazy-seq (step v-original-seqs)))))
 
+(defn to-obj [n] {:id n})
+
 (defn erdos-renyi
   [final-node-count edge-probability]
-  (let [nodes (range 1 final-node-count)
-        edges (filter (choose? edge-probability) (cartesian-product nodes nodes))]
-    (graph/->Graph nodes edges)))
+  (let [nodes (map to-obj (range 1 final-node-count))
+        edges (map to-obj (filter (choose? edge-probability) (cartesian-product nodes nodes)))]
+    ;;(graph/->Graph nodes edges)))
+    (graph/->Graph (clj->js nodes) (clj->js edges))))
 
