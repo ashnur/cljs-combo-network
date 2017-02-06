@@ -33,8 +33,8 @@
                 ;; the presence of a :figwheel configuration here
                 ;; will cause figwheel to inject the figwheel client
                 ;; into your build
-                :figwheel {:on-jsload "combo-network.core/on-js-reload"}
-                           ;; :websocket-host "192.168.1.3"}
+                :figwheel {:on-jsload "combo-network.core/on-js-reload"
+                           :websocket-host "192.168.0.12"}
                            ;; :open-urls will pop open your application
                            ;; in the default browser once Figwheel has
                            ;; started and complied your application.
@@ -61,7 +61,7 @@
 
   :figwheel {;; :http-server-root "public" ;; default and assumes "resources"
              ;; :server-port 3449 ;; default
-             ;; :server-ip "192.168.1.3"
+             :server-ip "192.168.0.12"
 
              :css-dirs ["resources/public/css"]} ;; watch and update CSS
 

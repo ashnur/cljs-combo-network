@@ -13,12 +13,32 @@
             [cljs-time.core :refer [now, epoch]]
             ))
 
+(defn touches
+  [node]
+  (fn [link]
+    (or (= (.-source link) node) (= (.-target link)))))
 
 (def delay-after-start 2000)
 (def G (ggen/erdos-renyi 100 0.2))
 
 (defonce empty-state (atom G))
 (defonce state empty-state)
+(def init-node (rand-int (.-length (:nodes G))))
+; graph.edges.filter(touches(initNode)).map(addDirections)
+;; const addDirections = (link) => {
+;;                                  const to = messages.indexOf(link.source) > -1 ? link.target : link.source
+;;                                  const from = messages.indexOf(link.source) > -1 ? link.source : link.target
+;;                                  return R.merge({to, from, p: 0}, link)
+;;                                  }
+
+(defn add-directions [link]
+  (let [to ()
+        from ()
+        dflt {:to to :from from :p 0}]
+    (merge dflt (js->clj link))))
+
+(def current-edges (.. (.-edges G) (filter (touches init-node)) (map add-directions)))
+
 (def display (.getElementById js/document "display"))
 ;; (def context (.getContext display "2d"))
 ;; (def damping 0.999)
@@ -26,7 +46,8 @@
 (def line-width 2)
 (def ctx nil)
 (def message-alpha 0.22)
-(def window-dimensions (reagent/atom nil))
+(def message-stroke-style "#123456")
+(def window-dimensions {})
 
 
 (def pi Math/PI)
@@ -44,7 +65,7 @@
   (set! ctx (context)))
 
 (defn on-window-resize []
-  (reset! window-dimensions {:width (.-innerWidth js/window) :height (.-innerHeight js/window)}))
+  (set! window-dimensions {:width (.-innerWidth js/window) :height (.-innerHeight js/window)}))
 
 (defn draw-node
   [d]
@@ -58,17 +79,30 @@
         target (:target msg)]
     (.log js/console source target msg)))
 
+(defn draw-message
+  [msg]
+  (let [source ('.-(.-from msg) (:nodes G))
+        target ('.-(.-to msg) (:nodes G))
+        [x,y] [(.interpolate js/d3 source target) (:p msg)]]
+        (.moveTo ctx (.-x source) (.-y source))
+        (.lineTo ctx x y))
+  )
+
 (defn ticked
   []
+  (.log js/console window-dimensions)
   (.clearRect ctx 0 0 (:width window-dimensions) (:height window-dimensions))
 
   (aset ctx "globalAlpha" message-alpha)
   (.beginPath ctx)
   (doseq [msg drawn-edges] (draw-old-message msg))
+  (aset ctx "strokeStyle" message-stroke-style)
+  (.stroke ctx)
 
-  
+  (.beginPath ctx)
+  (doseq [msg current-edges] (draw-message msg))
+  (.stroke ctx)
 
-  (aset ctx "strokeStyle" "#123456")
   (.beginPath ctx)
   (doseq [node (:nodes G)] (draw-node node))
   (aset ctx "globalAlpha" 0.3)
@@ -110,7 +144,6 @@
 
       :reagent-render
       (fn [ ]
-        @window-dimensions ;; Trigger re-render on window resizes
         [:div.with-canvas
          ;; reagent-render is called before the compoment mounts, so
          ;; protect against the null dom-node that occurs on the first
