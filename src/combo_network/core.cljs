@@ -47,7 +47,7 @@
 (def ctx nil)
 (def message-alpha 0.22)
 (def message-stroke-style "#123456")
-(def window-dimensions {})
+(def window-dimensions (js->clj {}))
 
 
 (def pi Math/PI)
@@ -61,11 +61,13 @@
 
 (defn drawing-board [])
 
-(defn context-update [ ]
-  (set! ctx (context)))
-
 (defn on-window-resize []
   (set! window-dimensions {:width (.-innerWidth js/window) :height (.-innerHeight js/window)}))
+
+(defn context-update [ ]
+  (set! window-dimensions {:width (.-innerWidth js/window) :height (.-innerHeight js/window)})
+  (set! ctx (context)))
+
 
 (defn draw-node
   [d]
@@ -90,18 +92,17 @@
 
 (defn ticked
   []
-  (.log js/console window-dimensions)
   (.clearRect ctx 0 0 (:width window-dimensions) (:height window-dimensions))
 
-  (aset ctx "globalAlpha" message-alpha)
-  (.beginPath ctx)
-  (doseq [msg drawn-edges] (draw-old-message msg))
-  (aset ctx "strokeStyle" message-stroke-style)
-  (.stroke ctx)
+  ;; (aset ctx "globalAlpha" message-alpha)
+  ;; (.beginPath ctx)
+  ;; (doseq [msg drawn-edges] (draw-old-message msg))
+  ;; (aset ctx "strokeStyle" message-stroke-style)
+  ;; (.stroke ctx)
 
-  (.beginPath ctx)
-  (doseq [msg current-edges] (draw-message msg))
-  (.stroke ctx)
+  ;; (.beginPath ctx)
+  ;; (doseq [msg current-edges] (draw-message msg))
+  ;; (.stroke ctx)
 
   (.beginPath ctx)
   (doseq [node (:nodes G)] (draw-node node))
