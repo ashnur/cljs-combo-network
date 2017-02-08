@@ -13,10 +13,15 @@
             [cljs-time.core :refer [now, epoch]]
             ))
 
-(def delay-after-start 2000)
-(def travel-time 600)
-(def G (ggen/erdos-renyi 20 0.10))
+(defonce pi Math/PI)
+(defonce two-pi (* 2 pi))
+(defonce delay-after-start 2000)
+(defonce travel-time 600)
+(defonce G (ggen/erdos-renyi 500 0.01))
+(defonce message-alpha 0.22)
+(defonce message-stroke-style "#123456")
 (def Gjs (clj->js G)) 
+(def drawn-edges (js/Array))
 
 (.log js/console Gjs)
 
@@ -36,45 +41,30 @@
     (aset link "from" from)
     link))
 
-(defn touches
-  [node]
+(defn touches [node]
   (fn [link]
     (or (= (aget link "source") node) (= (aget link "target") node))))
 
 (def current-edges (.. (aget Gjs "edges") (filter (touches init-node)) (map add-directions)))
-
 (def force-edges nil)
 
 (def ctx nil)
-(def message-alpha 0.22)
-(def message-stroke-style "#123456")
 
-(def window-dimensions (js-obj))
-(aset window-dimensions "width" (aget js/window "innerWidth"))
-(aset window-dimensions "height" (aget js/window "innerHeight"))
-
-(def pi Math/PI)
-(def two-pi (* 2 pi))
+(def window-dimensions (reagent/atom (clj->js {"width" (.-innerWidth js/window)
+                                               "height" (.-innerHeight js/window)})))
 
 (defn context []
   (let [canvas (js/document.querySelector "canvas")]
-    (aset canvas "width" (aget js/window "innerWidth"))
-    (aset canvas "height" (aget js/window "innerHeight"))
     (.getContext canvas "2d")))
 
-(defn on-window-resize []
-  (aset window-dimensions "width" (aget js/window "innerWidth"))
-  (aset window-dimensions "height" (aget js/window "innerHeight")))
 
-(defn context-update [ ]
-  (on-window-resize)
-  (set! ctx (context)))
+(defn context-update [] (set! ctx (context)))
 
 (defn draw-node [d]
-  (.moveTo ctx (+ d.x 2.5) d.y)
-  (.arc ctx d.x d.y 2.5 0 two-pi))
-
-(def drawn-edges (js/Array))
+  (let [x (aget d "x")
+        y (aget d "y")]
+  (.moveTo ctx (+ x 2.5) y)
+  (.arc ctx x y 2.5 0 two-pi)))
 
 (defn draw-old-message [msg]
   (let [nodes (aget Gjs "nodes")
@@ -82,7 +72,7 @@
         msg-target (aget msg "target")
         source (aget nodes msg-source)
         target (aget nodes msg-target)]
-    ;(.log js/console msg msg-target target nodes)
+                                        ;(.log js/console msg msg-target target nodes)
     (.moveTo ctx (aget source "x") (aget source "y"))
     (.lineTo ctx (aget target "x") (aget target "y"))))
 
@@ -118,35 +108,51 @@
 
 (defn ticked
   []
-  (.clearRect ctx 0 0 (aget window-dimensions "width") (aget window-dimensions "height"))
+  (let [wd @window-dimensions
+        w (aget wd "width")
+        h (aget wd "height")
+        hw (/ w 2)
+        hh (/ h 2)
+        nodes (aget Gjs "nodes")
+        canvas (.select js/d3 (js/document.querySelector "canvas"))
+        ]
+    (.attr canvas "width" w)
+    (.attr canvas "height" h)
+    (.translate ctx hw hh)
+    (aset ctx "globalAlpha" message-alpha)
 
-  (aset ctx "globalAlpha" message-alpha)
-  (.beginPath ctx)
-  (.forEach drawn-edges draw-old-message)
-  (aset ctx "strokeStyle" message-stroke-style)
-  (.stroke ctx)
+    (.beginPath ctx)
+    (.forEach drawn-edges draw-old-message)
+    (aset ctx "strokeStyle" message-stroke-style)
+    (.stroke ctx)
 
-  (.beginPath ctx)
-  (.forEach current-edges draw-message)
-  (.stroke ctx)
+    (.beginPath ctx)
+    (.forEach current-edges draw-message)
+    (.stroke ctx)
 
-  (.beginPath ctx)
-  (.forEach (aget Gjs "nodes") draw-node)
-  (aset ctx "globalAlpha" 0.3)
-  (aset ctx "fillStyle" (.interpolateViridis js/d3 0.3))
-  (.fill ctx)
-  )
+    (aset ctx "globalAlpha" 0.3)
+    (.forEach nodes draw-node)
+    (aset ctx "fillStyle" (.interpolateViridis js/d3 0.3))
+    (.fill ctx)
+    (.translate ctx (- hw) (- hh))
+    ))
 
 
 (def simulation
-  
-  (.. js/d3 forceSimulation
-      (force "center" (.forceCenter js/d3 (/ (aget window-dimensions "width") 2) (/ (aget window-dimensions "height") 2)))
-      (force "link" (.. js/d3 (forceLink) (distance 50) (strength 0.02)))
-      (force "link" (.. js/d3 forceLink (distance 50) (strength 0.02)))
-      (force "collide" (.forceCollide js/d3 5))
-      (force "charge" (.. js/d3 forceManyBody (distanceMin 20) (strength -1)))
-      ))
+  (let [wd @window-dimensions]
+    (.. js/d3 forceSimulation
+        (nodes (aget Gjs "nodes"))
+        (force "link" (.. js/d3 (forceLink) (distance 50) (strength 0.02)))
+        (force "link" (.. js/d3 forceLink (distance 50) (strength 0.02)))
+        (force "collide" (.forceCollide js/d3 5))
+        (force "charge" (.. js/d3 forceManyBody (distanceMin 20) (strength -1)))
+        (force "center" (.forceCenter js/d3 0 0))
+        )))
+
+(defn on-window-resize []
+  (reset! window-dimensions (clj->js {"width" (.-innerWidth js/window)
+                                      "height" (.-innerHeight js/window)}))
+  (.restart simulation))
 
 (defn in-the-dark
   [edge]
@@ -180,6 +186,19 @@
     (reset! timer-ref timer)
     ))
 
+
+(defn on-js-reload
+  []
+  (set! Gjs (clj->js G)) 
+  (set! drawn-edges (js/Array)) 
+  (set! init-node (rand-int (aget (aget Gjs "nodes") "length")))
+  (set! messages (js/Array))
+  (set! current-edges (.. (aget Gjs "edges") (filter (touches init-node)) (map add-directions)))
+  (set! force-edges nil)
+  
+  (js/setTimeout update-vis delay-after-start)
+  (.restart simulation))
+
 (defn ui-control
   [state]
   [:div {:class "Control__ui"}
@@ -196,21 +215,21 @@
 
       :component-did-mount
       (fn [ this ]
-        (js/setTimeout update-vis delay-after-start)
         (context-update)
-        (.. simulation (nodes (aget Gjs "nodes")) (on "tick" ticked))
+        (js/setTimeout update-vis delay-after-start)
+        ;; (.. simulation (nodes (aget Gjs "nodes")) (on "tick" ticked)) 
+        (.on simulation "tick" ticked)
         (reset! dom-node (reagent/dom-node this)
         ))
 
       :reagent-render
       (fn [ ]
+        @window-dimensions
         [:div.with-canvas
          ;; reagent-render is called before the compoment mounts, so
          ;; protect against the null dom-node that occurs on the first
          ;; render
-         [:canvas (if-let [ node @dom-node ]
-                    {:width (.-clientWidth node)
-                     :height (.-clientHeight node)})]])})))
+         [:canvas]])})))
 
 (defn graph-component
   [state]

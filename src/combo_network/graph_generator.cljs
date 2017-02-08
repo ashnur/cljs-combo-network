@@ -42,7 +42,7 @@
 
 (defn erdos-renyi
   [final-node-count edge-probability]
-  (let [nodes (range 0 (- final-node-count 1))
+  (let [nodes (range 0 final-node-count)
         edges (map to-edge (filter (choose? edge-probability) (filter (fn [e] (not= (first e) (second e))) (cartesian-product nodes nodes))))]
     (graph/->Graph (map to-node nodes) edges)))
     ;(graph/->Graph (clj->js nodes) (clj->js edges))))
