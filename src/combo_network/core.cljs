@@ -83,19 +83,6 @@
     (.moveTo ctx (aget source "x") (aget source "y"))
     (.lineTo ctx (aget target "x") (aget target "y"))))
 
-(defn scale [p, s]
-  #{"x" (* (aget p "x") s)
-    "y" (* (aget p "y") s)})
-
-(defn move-point [p, to, pct]
-  (let [px (aget p "x")
-        py (aget p "y")
-        tox (aget to "x")
-        toy (aget to "y")
-        dx (- tox px)
-        dy (- toy py)]
-    (scale p 1)))
-
 (defn draw-message
   [msg]
   (let [nodes (aget Gjs "nodes")
