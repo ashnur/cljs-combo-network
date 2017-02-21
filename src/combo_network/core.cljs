@@ -13,33 +13,51 @@
             [cljs-time.core :refer [now, epoch]]
             ))
 
+;; convenience 
 (defonce pi Math/PI)
 (defonce two-pi (* 2 pi))
 
+;; ui config
 (defonce node-radius 2.5)
-
-(def delay-after-start 2000)
-(def travel-time 1600)
-
-(def total-node-count 30)
-(def peer-connections-count (.log js/Math total-node-count))
-(def connection-average-chance (/ peer-connections-count total-node-count))
-
-(def G (ggen/erdos-renyi total-node-count connection-average-chance))
-
 (def old-message-alpha 0.3)
 (def old-message-stroke-style "#ccc")
 (def message-alpha 0.2)
 (def message-stroke-style "#0fff00")
 
+
+;; animation config
+(def delay-after-start 2000)
+(def travel-time 1600)
+
+
+;; graph config
+(def total-node-count 300)
+(def peer-connections-count (.log js/Math total-node-count))
+(def connection-average-chance (/ peer-connections-count total-node-count))
+
+;; generate random graph
+(def G (ggen/erdos-renyi total-node-count connection-average-chance))
+
+
+;; react is not yet playing a role, this is just placeholder
 (defonce state (reagent/atom nil))
 
+;; need js data for d3
 (def Gjs (clj->js G)) 
+
+;; select a random node to send a message to its neighbors
 (def init-node (rand-int (aget (aget Gjs "nodes") "length")))
+
+;; arrays to keep dynamic state in
 (def drawn-edges (js/Array))
 (def messages (js/Array))
+
+;; at first, only the source node has the message
 (.push messages init-node) 
 
+;; we always draw the message from the direction its coming from towards
+;; the neighbors of the current node
+;; here we check which side of the edge has the message already
 (defn add-directions [link]
   (let [to (if (> (.indexOf messages link.source) -1) link.target link.source)
         from (if (> (.indexOf messages link.source) -1) link.source link.target)
@@ -48,23 +66,27 @@
     (aset link "from" from)
     link))
 
+;; curried predicate to ask if edge touches specific node
 (defn touches [node]
   (fn [link]
     (or (= (aget link "source") node) (= (aget link "target") node))))
 
+;; select all edges that are the neighbors of the source node
 (def current-edges (.. (aget Gjs "edges") (filter (touches init-node)) (map add-directions)))
+
+;; hack/flag to update the drawing one last time for correct color
 (def update-last-edges true)
-(def force-edges [])
+
+;; (def force-edges [])
 
 (def ctx nil)
 
 (def window-dimensions (reagent/atom (clj->js {"width" (.-innerWidth js/window)
                                                "height" (.-innerHeight js/window)})))
+;; grab the context element from the DOM
 (defn context []
   (let [canvas (js/document.querySelector "canvas")]
     (.getContext canvas "2d")))
-
-
 (defn context-update [] (set! ctx (context)))
 
 (defn draw-node [d]
@@ -92,6 +114,7 @@
         src-y (aget source "y")
         tgt-x (aget target "x")
         tgt-y (aget target "y")
+        ;; all the arithmetic is to try drawing from the edge of the source node, not inside from the node
         slope (/ (- tgt-y src-y) (- tgt-x src-x))
         dff (js/Math.sqrt (+ (js/Math.pow (- src-x tgt-x) 2) (js/Math.pow (- src-y tgt-y) 2)))
         dist (if (= dff 0) node-radius dff)
@@ -118,9 +141,10 @@
     (if (= (.indexOf messages edge-to) -1) (.push messages edge-to))
     ))
 
-(defn not-current-edge
-  [fe]
-  (not-any? (fn [edge] (= (aget fe "index") (aget edge "index"))) current-edges))
+;; ;; 
+;; (defn not-current-edge
+;;   [fe]
+;;   (not-any? (fn [edge] (= (aget fe "index") (aget edge "index"))) current-edges))
 
 (defn ticked
   []
@@ -142,7 +166,6 @@
     (.forEach current-edges draw-message)
     (.stroke ctx)
 
-
     (aset ctx "globalAlpha" old-message-alpha)
     (aset ctx "strokeStyle" old-message-stroke-style)
     (.beginPath ctx)
@@ -156,6 +179,7 @@
     (.translate ctx (- hw) (- hh))
     ))
 
+
 (defn move-back [node i]
   (let [wd @window-dimensions
         w (aget wd "width")
@@ -167,6 +191,7 @@
         dx (- (/ x w) .5)
         dy (- (/ y h) .5)
         ]
+    ;; as node gets closer to the edge, move it towards the inside of the screen
     (if (< (rand) (.pow js/Math (/ dx 0.5), 40)) (aset node "vx" (* dx -3)) )
     (if (< (rand) (.pow js/Math (/ dy 0.5), 40)) (aset node "vy" (* dy -3)) )
     ))
@@ -175,6 +200,7 @@
   (let [nodes (aget Gjs "nodes")]
     (.forEach nodes move-back)))
 
+;; init d3
 (def simulation
   (.. js/d3 forceSimulation
       ;(nodes (aget Gjs "nodes"))
@@ -189,6 +215,7 @@
                                       "height" (.-innerHeight js/window)}))
   (.restart simulation))
 
+;; edges that have not yet received the message
 (defn in-the-dark
   [edge]
   (let [source (aget edge "source")
@@ -210,7 +237,7 @@
                          (.forEach current-edges (move-message progress)))
                        (do
                          (.stop t)
-                         (set! force-edges (clj->js (filter not-current-edge force-edges)))
+                         ; (set! force-edges (clj->js (filter not-current-edge force-edges)))
                          (.forEach current-edges add-to-drawn)
                          (let [extending-edges (.filter (aget Gjs "edges") in-the-dark)
                                next-edges (.map extending-edges add-directions)]
@@ -247,7 +274,7 @@
         (js/setTimeout update-vis delay-after-start)
         ;; (.. simulation (nodes (aget Gjs "nodes")) (on "tick" ticked)) 
         (.. simulation (nodes nodes) (on "tick" ticked))
-        (.. simulation (force "link") (links force-edges))
+        ; (.. simulation (force "link") (links force-edges))
         (reset! dom-node (reagent/dom-node this)
         ))
 
